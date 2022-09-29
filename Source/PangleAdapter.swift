@@ -63,8 +63,23 @@ final class PangleAdapter: ModularPartnerAdapter {
         BUAdSDKManager.setUserExtData(extData)
         BUAdSDKManager.setAppID(appID)
 
-        log(.setUpSucceded)
-        completion(nil)
+        BUAdSDKManager.start(asyncCompletionHandler: { [weak self] success, error in
+            guard let self = self else { return }
+            if let error = error {
+                self.log(.setUpFailed(error))
+                completion(error)
+            }
+            else if success {
+                self.log(.setUpSucceded)
+                completion(nil)
+            }
+            else {
+                let error = self.error(.setUpFailure, description: "Start was not successful.")
+                self.log(.setUpFailed(error))
+                completion(error)
+            }
+        })
+
     }
     
     /// Compute and return a bid token for the bid request.
