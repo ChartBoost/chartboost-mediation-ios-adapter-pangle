@@ -24,4 +24,5 @@ Pod::Spec.new do |spec|
 
   # Partner network SDK and version that this adapter is certified to work with.
   spec.dependency 'Ads-Global', '4.6.2.2' 
+  spec.static_framework = true
 end
