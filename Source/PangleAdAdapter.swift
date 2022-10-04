@@ -21,9 +21,6 @@ class PangleAdAdapter: NSObject, PartnerAdAdapter {
     /// The partner ad delegate to send ad life-cycle events to.
     weak var partnerAdDelegate: PartnerAdDelegate?
 
-    /// The completion handler to notify Helium of ad show completion result.
-    var loadCompletion: ((Result<PartnerAd, Error>) -> Void)?
-
     /// The completion handler to notify Helium of ad load completion result.
     var showCompletion: ((Result<PartnerAd, Error>) -> Void)?
 

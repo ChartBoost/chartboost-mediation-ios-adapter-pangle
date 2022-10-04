@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import BUAdSDK
+import PAGAdSDK
 import HeliumSdk
 
 final class PangleRewardedAdAdapter: PangleAdAdapter {
@@ -14,13 +14,18 @@ final class PangleRewardedAdAdapter: PangleAdAdapter {
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - completion: The completion handler to notify Helium of ad load completion result.
     override func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        loadCompletion = completion
-
-        let model = BURewardedVideoModel()
-        let ad = BURewardedVideoAd(slotID: request.partnerPlacement, rewardedVideoModel: model)
-        ad.delegate = self
-        partnerAd = PartnerAd(ad: ad, details: [:], request: request)
-        ad.loadData()
+        let rewardedRequest = PAGRewardedRequest()
+        PAGRewardedAd.load(withSlotID: request.partnerPlacement, request: rewardedRequest) { [weak self] ad, error in
+            guard let self = self else { return }
+            if let error = error {
+                completion(.failure(error))
+            }
+            else {
+                let partnerAd = PartnerAd(ad: ad, details: [:], request: self.request)
+                self.partnerAd = partnerAd
+                completion(.success(partnerAd))
+            }
+        }
     }
 
     /// Attempt to show the currently loaded ad.
@@ -28,56 +33,35 @@ final class PangleRewardedAdAdapter: PangleAdAdapter {
     ///   - viewController: The ViewController for ad presentation purposes.
     ///   - completion: The completion handler to notify Helium of ad show completion result.
     override func show(with viewController: UIViewController, completion: @escaping (Result<PartnerAd, Error>) -> Void) {
-        guard let ad = partnerAd.ad as? BURewardedVideoAd else {
-            let error = error(.showFailure(partnerAd), description: "Ad instance is nil/not an BURewardedVideoAd.")
+        guard let ad = partnerAd.ad as? PAGRewardedAd else {
+            let error = error(.showFailure(partnerAd), description: "Ad instance is nil/not an PAGRewardedAd.")
             return completion((.failure(error)))
         }
 
         showCompletion = completion
-        ad.show(fromRootViewController: viewController)
+
+        ad.delegate = self
+        ad.present(fromRootViewController: viewController)
     }
 }
 
-extension PangleRewardedAdAdapter: BURewardedVideoAdDelegate {
-
-    func rewardedVideoAdDidLoad(_ rewardedVideoAd: BURewardedVideoAd) {
-        loadCompletion?(.success(partnerAd)) ?? log(.loadResultIgnored)
-        loadCompletion = nil
-    }
-
-    func rewardedVideoAd(_ rewardedVideoAd: BURewardedVideoAd, didFailWithError error: Error?) {
-        let error = self.error(.loadFailure(request), error: error)
-        loadCompletion?(.failure(error)) ?? log(.loadResultIgnored)
-        loadCompletion = nil
-    }
-
-    func rewardedVideoAdDidVisible(_ rewardedVideoAd: BURewardedVideoAd) {
+extension PangleRewardedAdAdapter: PAGRewardedAdDelegate {
+    func adDidShow(_ ad: PAGAdProtocol) {
         showCompletion?(.success(partnerAd)) ?? log(.showResultIgnored)
         showCompletion = nil
     }
 
-    func rewardedVideoAdDidPlayFinish(_ rewardedVideoAd: BURewardedVideoAd, didFailWithError error: Error?) {
-        guard let error = error else {
-            return
-        }
-        showCompletion?(.failure(error)) ?? log(.loadResultIgnored)
-        showCompletion = nil
-    }
-
-    func rewardedVideoAdDidClose(_ rewardedVideoAd: BURewardedVideoAd) {
-        log(.didDismiss(partnerAd, error: nil))
-        partnerAdDelegate?.didDismiss(partnerAd, error: nil) ?? log(.delegateUnavailable)
-    }
-
-    func rewardedVideoAdDidClick(_ rewardedVideoAd: BURewardedVideoAd) {
+    func adDidClick(_ ad: PAGAdProtocol) {
         log(.didClick(partnerAd, error: nil))
         partnerAdDelegate?.didClick(partnerAd) ?? log(.delegateUnavailable)
     }
 
-    func rewardedVideoAdServerRewardDidSucceed(_ rewardedVideoAd: BURewardedVideoAd, verify: Bool) {
-        guard verify else {
-            return
-        }
+    func adDidDismiss(_ ad: PAGAdProtocol) {
+        log(.didDismiss(partnerAd, error: nil))
+        partnerAdDelegate?.didDismiss(partnerAd, error: nil) ?? log(.delegateUnavailable)
+    }
+
+    func rewardedAd(_ rewardedAd: PAGRewardedAd, userDidEarnReward rewardModel: PAGRewardModel) {
         let reward = Reward(amount: 1, label: nil)
         log(.didReward(partnerAd, reward: reward))
         partnerAdDelegate?.didReward(partnerAd, reward: reward) ?? log(.delegateUnavailable)

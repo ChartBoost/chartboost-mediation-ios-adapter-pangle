@@ -5,12 +5,12 @@
 
 import Foundation
 import HeliumSdk
-import BUAdSDK
+import PAGAdSDK
 import UIKit
 
 final class PangleAdapter: ModularPartnerAdapter {
     /// Get the version of the partner SDK.
-    let partnerSDKVersion: String = BUAdSDKManager.sdkVersion
+    let partnerSDKVersion: String = PAGSdk.sdkVersion
     
     /// Get the version of the mediation adapter.
     let adapterVersion = "4.4.6.2.0"
@@ -29,6 +29,12 @@ final class PangleAdapter: ModularPartnerAdapter {
 
     /// The last value set on `setGDPRConsentStatus(_:)`.
     private var gdprStatus: GDPRConsentStatus = .unknown
+
+    /// The last value set on `setUserSubjectToCOPPA(_)`.
+    private var isSubjectToCOPPA = false
+
+    /// The last value set on `setUserSubjectToCOPPA(_)`.
+    private var hasGivenCCPAConsent = false
 
     /// Provides a new ad adapter in charge of communicating with a single partner ad instance.
     func makeAdAdapter(request: PartnerAdLoadRequest, partnerAdDelegate: PartnerAdDelegate) throws -> PartnerAdAdapter {
@@ -60,26 +66,31 @@ final class PangleAdapter: ModularPartnerAdapter {
         let extData =
             "[{\"name\":\"mediation\",\"value\":\"Helium\"},{\"name\":\"adapter_version\",\"value\":\"\(adapterVersion)\"}]"
 
-        BUAdSDKManager.setUserExtData(extData)
-        BUAdSDKManager.setAppID(appID)
+        let config = PAGConfig.share()
+        config.appID = appID
+        config.userDataString = extData
 
-        BUAdSDKManager.start(asyncCompletionHandler: { [weak self] success, error in
+        // privacy
+        if gdprApplies {
+            config.gdprConsent = gdprStatus == .granted ? .consent : .noConsent
+            log(.privacyUpdated(setting: "'PAGConfig PAGGDPRConsentType'", value: config.gdprConsent))
+        }
+        config.childDirected = isSubjectToCOPPA ? .child : .nonChild
+        log(.privacyUpdated(setting: "'PAGConfig PAGChildDirectedType'", value: config.childDirected))
+        config.doNotSell = hasGivenCCPAConsent ? .sell : .notSell
+        log(.privacyUpdated(setting: "'PAGConfig PAGDoNotSellType'", value: config.doNotSell))
+
+        PAGSdk.start(with: config) { [weak self] success, error in
             guard let self = self else { return }
-            if let error = error {
-                self.log(.setUpFailed(error))
-                completion(error)
-            }
-            else if success {
+            if success {
                 self.log(.setUpSucceded)
                 completion(nil)
             }
             else {
-                let error = self.error(.setUpFailure, description: "Start was not successful.")
                 self.log(.setUpFailed(error))
                 completion(error)
             }
-        })
-
+        }
     }
     
     /// Compute and return a bid token for the bid request.
@@ -96,32 +107,18 @@ final class PangleAdapter: ModularPartnerAdapter {
     /// - Parameter applies: true if GDPR applies, false otherwise.
     func setGDPRApplies(_ applies: Bool) {
         gdprApplies = applies
-        updateGDPRConsent()
     }
     
     /// Notify the partner SDK of the GDPR consent status as determined by the Helium SDK.
     /// - Parameter status: The user's current GDPR consent status.
     func setGDPRConsentStatus(_ status: GDPRConsentStatus) {
         gdprStatus = status
-        updateGDPRConsent()
-    }
-
-    private func updateGDPRConsent() {
-        guard gdprApplies else {
-            return
-        }
-
-        let gdpr = gdprStatus == .granted ? 0 : 1
-        log(.privacyUpdated(setting: "'GDPR Bool'", value: gdpr))
-        BUAdSDKManager.setGDPR(gdpr)
     }
 
     /// Notify the partner SDK of the COPPA subjectivity as determined by the Helium SDK.
     /// - Parameter isSubject: True if the user is subject to COPPA, false otherwise.
     func setUserSubjectToCOPPA(_ isSubject: Bool) {
-        let value = isSubject ? 1 : 0
-        log(.privacyUpdated(setting: "'Coppa Bool'", value: value))
-        BUAdSDKManager.setCoppa(value)
+        isSubjectToCOPPA = isSubject
     }
     
     /// Notify the partner SDK of the CCPA privacy String as supplied by the Helium SDK.
@@ -129,9 +126,7 @@ final class PangleAdapter: ModularPartnerAdapter {
     ///   - hasGivenConsent: True if the user has given CCPA consent, false otherwise.
     ///   - privacyString: The CCPA privacy String.
     func setCCPAConsent(hasGivenConsent: Bool, privacyString: String?) {
-        let value = hasGivenConsent ? 1 : 0
-        log(.privacyUpdated(setting: "'CCPA Bool'", value: value))
-        BUAdSDKManager.setCCPA(value)
+        hasGivenCCPAConsent = hasGivenConsent
     }
 }
 
