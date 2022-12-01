@@ -36,3 +36,12 @@ class PangleAdapterAd: NSObject {
         self.delegate = delegate
     }
 }
+
+extension PangleAdapterAd {
+    
+    /// Pangle errors sometimes include relevant information under a custom userInfo key.
+    /// This convenience method allows us to fetch that info and surface it to the SDK.
+    func description(fromPangleError error: Error?) -> String? {
+        (error as NSError?)?.userInfo["extra_reason"] as? String
+    }
+}
