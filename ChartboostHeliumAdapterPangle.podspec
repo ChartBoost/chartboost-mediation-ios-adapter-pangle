@@ -2,7 +2,7 @@ Pod::Spec.new do |spec|
   spec.name        = 'ChartboostHeliumAdapterPangle'
   spec.version     = '4.4.6.2.0'
   spec.license     = { :type => 'MIT', :file => 'LICENSE.md' }
-  spec.homepage    = 'https://github.com/ChartBoost/helium-ios-adapter-chartboost'
+  spec.homepage    = 'https://github.com/ChartBoost/helium-ios-adapter-pangle'
   spec.authors     = { 'Chartboost' => 'https://www.chartboost.com/' }
   spec.summary     = 'Helium iOS SDK Pangle adapter.'
   spec.description = 'Pangle Adapters for mediating through Helium. Supported ad formats: Banner, Interstitial, and Rewarded.'
