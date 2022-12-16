@@ -54,10 +54,8 @@ final class PangleAdapterInterstitialAd: PangleAdapterAd, PartnerAd {
         
         showCompletion = completion
         
-        DispatchQueue.main.async {
-            ad.delegate = self
-            ad.present(fromRootViewController: viewController)
-        }
+        ad.delegate = self
+        ad.present(fromRootViewController: viewController)
     }
 }
 
