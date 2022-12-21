@@ -115,6 +115,8 @@ final class PangleAdapter: PartnerAdapter {
             return PangleAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
         case .banner:
             return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
+        @unknown default:
+            throw error(.adFormatNotSupported(request))
         }
     }
 }
