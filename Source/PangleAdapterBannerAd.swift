@@ -23,23 +23,21 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
     func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
         log(.loadStarted)
         
-        DispatchQueue.main.async { [self] in
-            let size = PAGAdSize(size: request.size ?? IABStandardAdSize)
-            let bannerRequest = PAGBannerRequest(bannerSize: size)
-            
-            PAGBannerAd.load(withSlotID: request.partnerPlacement, request: bannerRequest) { [weak self] ad, partnerError in
-                guard let self = self else { return }
-                if let ad = ad, partnerError == nil {   // It's possible that an error occurs, the ad cannot be shown, and yet `ad` is not nil
-                    ad.delegate = self
-                    ad.rootViewController = viewController
-                    self.ad = ad
-                    self.log(.loadSucceeded)
-                    completion(.success([:]))
-                } else {
-                    let error = self.error(.loadFailure, description: self.description(fromPangleError: partnerError), error: partnerError)
-                    self.log(.loadFailed(error))
-                    completion(.failure(error))
-                }
+        let size = PAGAdSize(size: request.size ?? IABStandardAdSize)
+        let bannerRequest = PAGBannerRequest(bannerSize: size)
+        
+        PAGBannerAd.load(withSlotID: request.partnerPlacement, request: bannerRequest) { [weak self] ad, partnerError in
+            guard let self = self else { return }
+            if let ad = ad, partnerError == nil {   // It's possible that an error occurs, the ad cannot be shown, and yet `ad` is not nil
+                ad.delegate = self
+                ad.rootViewController = viewController
+                self.ad = ad
+                self.log(.loadSucceeded)
+                completion(.success([:]))
+            } else {
+                let error = self.error(.loadFailure, description: self.description(fromPangleError: partnerError), error: partnerError)
+                self.log(.loadFailed(error))
+                completion(.failure(error))
             }
         }
     }
