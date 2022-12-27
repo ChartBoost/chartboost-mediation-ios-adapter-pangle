@@ -35,7 +35,7 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
                 self.log(.loadSucceeded)
                 completion(.success([:]))
             } else {
-                let error = self.error(.loadFailure, error: partnerError)
+                let error = self.error(.loadFailureException, error: partnerError)
                 self.log(.loadFailed(error))
                 completion(.failure(error))
             }   
