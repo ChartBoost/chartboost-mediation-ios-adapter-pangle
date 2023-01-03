@@ -31,7 +31,7 @@ final class PangleAdapterInterstitialAd: PangleAdapterAd, PartnerAd {
                 self.log(.loadSucceeded)
                 completion(.success([:]))
             } else {
-                let error = self.error(.loadFailureException, error: partnerError)
+                let error = self.error(.loadFailureUnknown, error: partnerError)
                 self.log(.loadFailed(error))
                 completion(.failure(error))
             }
