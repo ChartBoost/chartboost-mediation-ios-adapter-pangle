@@ -39,7 +39,7 @@ final class PangleAdapter: PartnerAdapter {
         
         // Fail early if credentials are missing.
         guard let appID = configuration.appID, !appID.isEmpty else {
-            let error = error(.missingSetUpParameter(key: .appIDKey))
+            let error = error(.initializationFailureInvalidCredentials, description: "Missing \(String.appIDKey)")
             log(.setUpFailed(error))
             return completion(error)
         }
@@ -116,7 +116,7 @@ final class PangleAdapter: PartnerAdapter {
         case .banner:
             return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         @unknown default:
-            throw error(.adFormatNotSupported(request))
+            throw error(.loadFailureUnsupportedAdFormat)
         }
     }
 }

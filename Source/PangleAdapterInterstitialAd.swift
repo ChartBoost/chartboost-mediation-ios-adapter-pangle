@@ -31,7 +31,7 @@ final class PangleAdapterInterstitialAd: PangleAdapterAd, PartnerAd {
                 self.log(.loadSucceeded)
                 completion(.success([:]))
             } else {
-                let error = self.error(.loadFailure, error: partnerError)
+                let error = self.error(.loadFailureUnknown, error: partnerError)
                 self.log(.loadFailed(error))
                 completion(.failure(error))
             }
@@ -47,7 +47,7 @@ final class PangleAdapterInterstitialAd: PangleAdapterAd, PartnerAd {
         
         // Fail early if no ad is loaded
         guard let ad = ad else {
-            let error = error(.noAdReadyToShow)
+            let error = error(.showFailureAdNotReady)
             log(.showFailed(error))
             return completion(.failure(error))
         }
