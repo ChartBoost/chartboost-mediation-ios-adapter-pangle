@@ -8,10 +8,10 @@
 //  ChartboostHeliumAdapterPangle
 //
 
+import ChartboostMediationSDK
 import Foundation
-import UIKit
-import HeliumSdk
 import PAGAdSDK
+import UIKit
 
 /// The Helium Pangle adapter.
 final class PangleAdapter: PartnerAdapter {

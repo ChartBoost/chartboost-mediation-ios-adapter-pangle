@@ -8,9 +8,9 @@
 //  ChartboostHeliumAdapterPangle
 //
 
+import ChartboostMediationSDK
 import Foundation
 import PAGAdSDK
-import HeliumSdk
 
 /// The Helium Pangle adapter rewarded ad.
 final class PangleAdapterRewardedAd: PangleAdapterAd, PartnerAd {
