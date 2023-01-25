@@ -8,10 +8,10 @@
 //  ChartboostHeliumAdapterPangle
 //
 
+import BUAdSDK
+import ChartboostMediationSDK
 import Foundation
 import UIKit
-import HeliumSdk
-import BUAdSDK
 
 /// Base class for Helium Pangle adapter ads.
 class PangleAdapterAd: NSObject {
