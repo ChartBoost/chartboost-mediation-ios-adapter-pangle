@@ -1,6 +1,6 @@
 # Chartboost Mediation Pangle Adapter
 
-The Chartboost Mediation Pangle adapter mediates the Pangle SDK into the Chartboost Mediation SDK.
+The Chartboost Mediation Pangle adapter mediates Pangle via the Chartboost Mediation SDK.
 
 ## Minimum Requirements
 
