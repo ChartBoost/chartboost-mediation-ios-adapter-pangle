@@ -5,14 +5,14 @@
 
 //
 //  PangleAdapterBannerAd.swift
-//  ChartboostHeliumAdapterPangle
+//  ChartboostMediationAdapterPangle
 //
 
 import ChartboostMediationSDK
 import Foundation
 import PAGAdSDK
 
-/// The Helium Pangle adapter banner ad.
+/// The Chartboost Mediation Pangle adapter banner ad.
 final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
     
     /// The partner ad view to display inline. E.g. a banner view.
