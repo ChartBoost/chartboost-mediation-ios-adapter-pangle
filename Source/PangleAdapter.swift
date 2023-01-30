@@ -52,7 +52,7 @@ final class PangleAdapter: PartnerAdapter {
         // Identify Chartboost Mediation as the mediation source.
         // https://bytedance.feishu.cn/docs/doccnizmSHXvAcbT1dIYEthNlCg
         let extData =
-            "[{\"name\":\"mediation\",\"value\":\"Helium\"},{\"name\":\"adapter_version\",\"value\":\"\(adapterVersion)\"}]"
+            "[{\"name\":\"mediation\",\"value\":\"Chartboost\"},{\"name\":\"adapter_version\",\"value\":\"\(adapterVersion)\"}]"
         
         let config = PAGConfig.share()
         config.appID = appID
