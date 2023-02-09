@@ -76,6 +76,7 @@ final class PangleAdapter: PartnerAdapter {
     /// - parameter applies: `true` if GDPR applies, `false` if not, `nil` if the publisher has not provided this information.
     /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
     func setGDPR(applies: Bool?, status: GDPRConsentStatus) {
+        // See PAGConfig.gdprConsent documentation on PAGConfig.h
         if applies == true {
             let gpdrConsent: PAGGDPRConsentType = status == .granted ? .consent : .noConsent
             PAGConfig.share().gdprConsent = gpdrConsent
@@ -86,6 +87,7 @@ final class PangleAdapter: PartnerAdapter {
     /// Indicates if the user is subject to COPPA or not.
     /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
     func setCOPPA(isChildDirected: Bool) {
+        // See PAGConfig.childDirected documentation on PAGConfig.h
         let childDirected: PAGChildDirectedType = isChildDirected ? .child : .nonChild
         PAGConfig.share().childDirected = childDirected
         log(.privacyUpdated(setting: "childDirected", value: childDirected.rawValue))
@@ -95,6 +97,7 @@ final class PangleAdapter: PartnerAdapter {
     /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
     /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
     func setCCPA(hasGivenConsent: Bool, privacyString: String) {
+        // See PAGConfig.doNotSell documentation on PAGConfig.h
         let doNotSell: PAGDoNotSellType = hasGivenConsent ? .sell : .notSell
         PAGConfig.share().doNotSell = doNotSell
         log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
