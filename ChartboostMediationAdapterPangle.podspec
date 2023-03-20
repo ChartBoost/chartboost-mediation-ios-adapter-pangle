@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name        = 'ChartboostMediationAdapterPangle'
-  spec.version     = '4.4.9.0.6.0'
+  spec.version     = '4.4.9.1.0.0'
   spec.license     = { :type => 'MIT', :file => 'LICENSE.md' }
   spec.homepage    = 'https://github.com/ChartBoost/chartboost-mediation-ios-adapter-pangle'
   spec.authors     = { 'Chartboost' => 'https://www.chartboost.com/' }
@@ -23,6 +23,6 @@ Pod::Spec.new do |spec|
   spec.dependency 'ChartboostMediationSDK', '~> 4.0'
 
   # Partner network SDK and version that this adapter is certified to work with.
-  spec.dependency 'Ads-Global', '~> 4.9.0.6'
+  spec.dependency 'Ads-Global', '~> 4.9.1.0'
   spec.static_framework = true
 end
