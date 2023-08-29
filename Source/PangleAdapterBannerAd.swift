@@ -22,9 +22,16 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
     /// - parameter completion: Closure to be performed once the ad has been loaded.
     func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
         log(.loadStarted)
-        
-        let size = PAGAdSize(size: request.size ?? IABStandardAdSize)
-        let bannerRequest = PAGBannerRequest(bannerSize: size)
+
+        // Fail if we cannot fit a fixed size banner in the requested size.
+        guard let size = fixedBannerSize(for: request.size ?? IABStandardAdSize) else {
+            let error = error(.loadFailureInvalidBannerSize)
+            log(.loadFailed(error))
+            return completion(.failure(error))
+        }
+
+        let pangleSize = PAGAdSize(size: size)
+        let bannerRequest = PAGBannerRequest(bannerSize: pangleSize)
         
         PAGBannerAd.load(withSlotID: request.partnerPlacement, request: bannerRequest) { [weak self] ad, partnerError in
             guard let self = self else { return }
@@ -33,7 +40,13 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
                 ad.rootViewController = viewController
                 self.ad = ad
                 self.log(.loadSucceeded)
-                completion(.success([:]))
+
+                let partnerDetails = [
+                    "bannerWidth": "\(size.width)",
+                    "bannerHeight": "\(size.height)",
+                    "bannerType": "0" // Fixed banner
+                ]
+                completion(.success(partnerDetails))
             } else {
                 let error = partnerError ?? self.error(.loadFailureUnknown)
                 self.log(.loadFailed(error))
@@ -64,5 +77,22 @@ extension PangleAdapterBannerAd: PAGBannerAdDelegate {
     
     func adDidDismiss(_ ad: PAGAdProtocol) {
         log(.delegateCallIgnored)
+    }
+}
+
+// MARK: - Helpers
+extension PangleAdapterBannerAd {
+    private func fixedBannerSize(for requestedSize: CGSize) -> CGSize? {
+        let sizes = [IABLeaderboardAdSize, IABMediumAdSize, IABStandardAdSize]
+        // Find the largest size that can fit in the requested size.
+        for size in sizes {
+            // If height is 0, the pub has requested an ad of any height, so only the width matters.
+            if requestedSize.width >= size.width &&
+                (size.height == 0 || requestedSize.height >= size.height) {
+                return size
+            }
+        }
+        // The requested size cannot fit any fixed size banners.
+        return nil
     }
 }
