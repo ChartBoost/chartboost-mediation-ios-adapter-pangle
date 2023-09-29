@@ -58,6 +58,7 @@ final class PangleAdapter: PartnerAdapter {
                 log(.setUpSucceded)
                 completion(nil)
             } else {
+                let error = error ?? NSError(domain: "com.chartboost.mediation.adapter.pangle", code: 0)
                 log(.setUpFailed(error))
                 completion(error)
             }
