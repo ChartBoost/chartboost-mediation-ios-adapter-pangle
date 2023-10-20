@@ -3,7 +3,7 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
 
-import BUAdSDK
+import PAGAdSDK
 import ChartboostMediationSDK
 import Foundation
 import UIKit
