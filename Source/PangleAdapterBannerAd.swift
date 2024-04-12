@@ -14,13 +14,17 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
     /// Should be nil for full-screen ads.
     var inlineView: UIView? { ad?.bannerView }
     
+    /// The loaded partner ad banner size.
+    /// Should be `nil` for full-screen ads.
+    var bannerSize: PartnerBannerSize?
+
     /// The Pangle SDK ad instance.
     private var ad: PAGBannerAd?
     
     /// Loads an ad.
     /// - parameter viewController: The view controller on which the ad will be presented on. Needed on load for some banners.
     /// - parameter completion: Closure to be performed once the ad has been loaded.
-    func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
+    func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
         log(.loadStarted)
 
         // Fail if we cannot fit a fixed size banner in the requested size.
@@ -40,13 +44,8 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
                 ad.rootViewController = viewController
                 self.ad = ad
                 self.log(.loadSucceeded)
-
-                let partnerDetails = [
-                    "bannerWidth": "\(size.width)",
-                    "bannerHeight": "\(size.height)",
-                    "bannerType": "0" // Fixed banner
-                ]
-                completion(.success(partnerDetails))
+                self.bannerSize = PartnerBannerSize(size: size, type: .fixed)
+                completion(.success([:]))
             } else {
                 let error = partnerError ?? self.error(.loadFailureUnknown)
                 self.log(.loadFailed(error))
@@ -59,7 +58,7 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
     /// It will never get called for banner ads. You may leave the implementation blank for that ad format.
     /// - parameter viewController: The view controller on which the ad will be presented on.
     /// - parameter completion: Closure to be performed once the ad has been shown.
-    func show(with viewController: UIViewController, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
+    func show(with viewController: UIViewController, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
         // no-op
     }
 }

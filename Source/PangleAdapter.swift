@@ -20,7 +20,7 @@ final class PangleAdapter: PartnerAdapter {
     let adapterVersion = "4.5.7.0.0.0"
     
     /// The partner's unique identifier.
-    let partnerIdentifier = "pangle"
+    let partnerID = "pangle"
     
     /// The human-friendly partner name.
     let partnerDisplayName = "Pangle"
@@ -34,14 +34,14 @@ final class PangleAdapter: PartnerAdapter {
     /// Does any setup needed before beginning to load ads.
     /// - parameter configuration: Configuration data for the adapter to set up.
     /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
-    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
+    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
         log(.setUpStarted)
         
         // Fail early if credentials are missing.
         guard let appID = configuration.appID, !appID.isEmpty else {
             let error = error(.initializationFailureInvalidCredentials, description: "Missing \(String.appIDKey)")
             log(.setUpFailed(error))
-            return completion(error)
+            return completion(.failure(error))
         }
         
         // Identify Chartboost Mediation as the mediation source.
@@ -56,11 +56,11 @@ final class PangleAdapter: PartnerAdapter {
         PAGSdk.start(with: config) { [self] success, error in
             if success {
                 log(.setUpSucceded)
-                completion(nil)
+                completion(.success([:]))
             } else {
                 let error = error ?? self.error(.partnerError)
                 log(.setUpFailed(error))
-                completion(error)
+                completion(.failure(error))
             }
         }
     }
@@ -68,9 +68,10 @@ final class PangleAdapter: PartnerAdapter {
     /// Fetches bidding tokens needed for the partner to participate in an auction.
     /// - parameter request: Information about the ad load request.
     /// - parameter completion: Closure to be performed with the fetched info.
-    func fetchBidderInformation(request: PreBidRequest, completion: @escaping ([String : String]?) -> Void) {
+    func fetchBidderInformation(request: PartnerAdPreBidRequest, completion: @escaping (Result<[String : String], Error>) -> Void) {
         // Pangle does not currently provide any bidding token
-        completion(nil)
+        log(.fetchBidderInfoNotSupported)
+        completion(.success([:]))
     }
     
     /// Indicates if GDPR applies or not and the user's GDPR consent status.
@@ -114,19 +115,14 @@ final class PangleAdapter: PartnerAdapter {
     func makeAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerAd {
         // This partner supports multiple loads for the same partner placement.
         switch request.format {
-        case .interstitial:
+        case PartnerAdFormats.interstitial:
             return PangleAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
-        case .rewarded:
+        case PartnerAdFormats.rewarded:
             return PangleAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
-        case .banner:
+        case PartnerAdFormats.banner, PartnerAdFormats.adaptiveBanner:
             return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         default:
-            // Not using the `.adaptiveBanner` case directly to maintain backward compatibility with Chartboost Mediation 4.0
-            if request.format.rawValue == "adaptive_banner" {
-                return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
-            } else {
-                throw error(.loadFailureUnsupportedAdFormat)
-            }
+            throw error(.loadFailureUnsupportedAdFormat)
         }
     }
 }
