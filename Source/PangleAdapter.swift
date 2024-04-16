@@ -119,7 +119,7 @@ final class PangleAdapter: PartnerAdapter {
             return PangleAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
         case PartnerAdFormats.rewarded:
             return PangleAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
-        case PartnerAdFormats.banner, PartnerAdFormats.adaptiveBanner:
+        case PartnerAdFormats.banner:
             return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         default:
             throw error(.loadFailureUnsupportedAdFormat)
