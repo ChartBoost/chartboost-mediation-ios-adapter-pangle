@@ -8,15 +8,12 @@ import Foundation
 import PAGAdSDK
 
 /// The Chartboost Mediation Pangle adapter banner ad.
-final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
-    
-    /// The partner ad view to display inline. E.g. a banner view.
-    /// Should be nil for full-screen ads.
-    var inlineView: UIView? { ad?.bannerView }
-    
+final class PangleAdapterBannerAd: PangleAdapterAd, PartnerBannerAd {
+    /// The partner banner ad view to display.
+    var view: UIView? { ad?.bannerView }
+
     /// The loaded partner ad banner size.
-    /// Should be `nil` for full-screen ads.
-    var bannerSize: PartnerBannerSize?
+    var size: PartnerBannerSize?
 
     /// The Pangle SDK ad instance.
     private var ad: PAGBannerAd?
@@ -28,13 +25,13 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
         log(.loadStarted)
 
         // Fail if we cannot fit a fixed size banner in the requested size.
-        guard let size = fixedBannerSize(for: request.bannerSize) else {
+        guard let loadedSize = fixedBannerSize(for: request.bannerSize) else {
             let error = error(.loadFailureInvalidBannerSize)
             log(.loadFailed(error))
             return completion(.failure(error))
         }
 
-        let pangleSize = PAGAdSize(size: size)
+        let pangleSize = PAGAdSize(size: loadedSize)
         let bannerRequest = PAGBannerRequest(bannerSize: pangleSize)
         
         PAGBannerAd.load(withSlotID: request.partnerPlacement, request: bannerRequest) { [weak self] ad, partnerError in
@@ -44,7 +41,7 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerAd {
                 ad.rootViewController = viewController
                 self.ad = ad
                 self.log(.loadSucceeded)
-                self.bannerSize = PartnerBannerSize(size: size, type: .fixed)
+                self.size = PartnerBannerSize(size: loadedSize, type: .fixed)
                 completion(.success([:]))
             } else {
                 let error = partnerError ?? self.error(.loadFailureUnknown)
