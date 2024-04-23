@@ -74,37 +74,54 @@ final class PangleAdapter: PartnerAdapter {
         completion(.success([:]))
     }
     
-    /// Indicates if GDPR applies or not and the user's GDPR consent status.
-    /// - parameter applies: `true` if GDPR applies, `false` if not, `nil` if the publisher has not provided this information.
-    /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
-    func setGDPR(applies: Bool?, status: GDPRConsentStatus) {
+    /// Indicates that the user consent has changed.
+    /// - parameter consents: The new consents value, including both modified and unmodified consents.
+    /// - parameter modifiedKeys: A set containing all the keys that changed.
+    func setConsents(_ consents: [ConsentKey: ConsentValue], modifiedKeys: Set<ConsentKey>) {
         // See PAGConfig.gdprConsent documentation on PAGConfig.h
-        if applies == true {
-            let gpdrConsent: PAGGDPRConsentType = status == .granted ? .consent : .noConsent
-            PAGConfig.share().gdprConsent = gpdrConsent
-            log(.privacyUpdated(setting: "gdprConsent", value: gpdrConsent.rawValue))
+        if modifiedKeys.contains(partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven) {
+            let consent = consents[partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
+            switch consent {
+            case ConsentValues.granted:
+                let gdprConsent = PAGGDPRConsentType.consent
+                PAGConfig.share().gdprConsent = gdprConsent
+                log(.privacyUpdated(setting: "gdprConsent", value: gdprConsent.rawValue))
+            case ConsentValues.denied:
+                let gdprConsent = PAGGDPRConsentType.noConsent
+                PAGConfig.share().gdprConsent = gdprConsent
+                log(.privacyUpdated(setting: "gdprConsent", value: gdprConsent.rawValue))
+            default:
+                break   // do nothing
+            }
+        }
+
+        // See PAGConfig.doNotSell documentation on PAGConfig.h
+        if modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
+            let consent = consents[ConsentKeys.ccpaOptIn]
+            switch consent {
+            case ConsentValues.granted:
+                let doNotSell = PAGDoNotSellType.sell
+                PAGConfig.share().doNotSell = doNotSell
+                log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
+            case ConsentValues.denied:
+                let doNotSell = PAGDoNotSellType.notSell
+                PAGConfig.share().doNotSell = doNotSell
+                log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
+            default:
+                break   // do nothing
+            }
         }
     }
-    
-    /// Indicates if the user is subject to COPPA or not.
-    /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
-    func setCOPPA(isChildDirected: Bool) {
+
+    /// Indicates that the user is underage signal has changed.
+    /// - parameter isUserUnderage: `true` if the user is underage as determined by the publisher, `false` otherwise.
+    func setIsUserUnderage(_ isUserUnderage: Bool) {
         // See PAGConfig.childDirected documentation on PAGConfig.h
-        let childDirected: PAGChildDirectedType = isChildDirected ? .child : .nonChild
+        let childDirected: PAGChildDirectedType = isUserUnderage ? .child : .nonChild
         PAGConfig.share().childDirected = childDirected
         log(.privacyUpdated(setting: "childDirected", value: childDirected.rawValue))
     }
-    
-    /// Indicates the CCPA status both as a boolean and as an IAB US privacy string.
-    /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
-    /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
-    func setCCPA(hasGivenConsent: Bool, privacyString: String) {
-        // See PAGConfig.doNotSell documentation on PAGConfig.h
-        let doNotSell: PAGDoNotSellType = hasGivenConsent ? .sell : .notSell
-        PAGConfig.share().doNotSell = doNotSell
-        log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
-    }
-    
+
     /// Creates a new banner ad object in charge of communicating with a single partner SDK ad instance.
     /// Chartboost Mediation SDK calls this method to create a new ad for each new load request. Ad instances are never reused.
     /// Chartboost Mediation SDK takes care of storing and disposing of ad instances so you don't need to.
