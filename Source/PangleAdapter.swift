@@ -43,7 +43,11 @@ final class PangleAdapter: PartnerAdapter {
             log(.setUpFailed(error))
             return completion(.failure(error))
         }
-        
+
+        // Apply initial consents
+        setConsents(configuration.consents, modifiedKeys: Set(configuration.consents.keys))
+        setIsUserUnderage(configuration.isUserUnderage)
+
         // Identify Chartboost Mediation as the mediation source.
         // https://bytedance.feishu.cn/docs/doccnizmSHXvAcbT1dIYEthNlCg
         let extData =
