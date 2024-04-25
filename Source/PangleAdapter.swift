@@ -87,13 +87,11 @@ final class PangleAdapter: PartnerAdapter {
             let consent = consents[partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
             switch consent {
             case ConsentValues.granted:
-                let gdprConsent = PAGGDPRConsentType.consent
-                PAGConfig.share().gdprConsent = gdprConsent
-                log(.privacyUpdated(setting: "gdprConsent", value: gdprConsent.rawValue))
+                PAGConfig.share().gdprConsent = .consent
+                log(.privacyUpdated(setting: "gdprConsent", value: PAGGDPRConsentType.consent.rawValue))
             case ConsentValues.denied:
-                let gdprConsent = PAGGDPRConsentType.noConsent
-                PAGConfig.share().gdprConsent = gdprConsent
-                log(.privacyUpdated(setting: "gdprConsent", value: gdprConsent.rawValue))
+                PAGConfig.share().gdprConsent = .noConsent
+                log(.privacyUpdated(setting: "gdprConsent", value: PAGGDPRConsentType.noConsent.rawValue))
             default:
                 break   // do nothing
             }
@@ -104,13 +102,11 @@ final class PangleAdapter: PartnerAdapter {
             let consent = consents[ConsentKeys.ccpaOptIn]
             switch consent {
             case ConsentValues.granted:
-                let doNotSell = PAGDoNotSellType.sell
-                PAGConfig.share().doNotSell = doNotSell
-                log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
+                PAGConfig.share().doNotSell = .sell
+                log(.privacyUpdated(setting: "doNotSell", value: PAGDoNotSellType.sell.rawValue))
             case ConsentValues.denied:
-                let doNotSell = PAGDoNotSellType.notSell
-                PAGConfig.share().doNotSell = doNotSell
-                log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
+                PAGConfig.share().doNotSell = .notSell
+                log(.privacyUpdated(setting: "doNotSell", value: PAGDoNotSellType.notSell.rawValue))
             default:
                 break   // do nothing
             }
