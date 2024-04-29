@@ -91,7 +91,10 @@ final class PangleAdapter: PartnerAdapter {
     /// - parameter modifiedKeys: A set containing all the keys that changed.
     func setConsents(_ consents: [ConsentKey: ConsentValue], modifiedKeys: Set<ConsentKey>) {
         // See PAGConfig.gdprConsent documentation on PAGConfig.h
-        if modifiedKeys.contains(partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven) {
+        // Ignore if the consent status has been directly set by publisher via the configuration class.
+        if !PangleAdapterConfiguration.isGDPRConsentOverriden
+            && (modifiedKeys.contains(partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven))
+        {
             let consent = consents[partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
             switch consent {
             case ConsentValues.granted:
@@ -106,7 +109,8 @@ final class PangleAdapter: PartnerAdapter {
         }
 
         // See PAGConfig.doNotSell documentation on PAGConfig.h
-        if modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
+        // Ignore if the consent status has been directly set by publisher via the configuration class.
+        if !PangleAdapterConfiguration.isDoNotSellOverriden && modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
             let consent = consents[ConsentKeys.ccpaOptIn]
             switch consent {
             case ConsentValues.granted:

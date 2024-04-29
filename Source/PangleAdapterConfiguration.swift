@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file.
 
 import Foundation
+import os.log
 import PAGAdSDK
 
 @objc public class PangleAdapterConfiguration: NSObject {
@@ -23,4 +24,28 @@ import PAGAdSDK
 
     /// The human-friendly partner name.
     @objc public static let partnerDisplayName = "Pangle"
+
+    /// Use to manually set the consent status on the Pangle SDK.
+    /// This is generally unnecessary as the Mediation SDK will set the consent status automatically based on the latest consent info.
+    @objc public static func setGDPRConsentOverride(_ consent: PAGGDPRConsentType) {
+        isGDPRConsentOverriden = true
+        PAGConfig.share().gdprConsent = consent
+        os_log(.info, log: log, "Pangle SDK GDPR consent override set to %{public}s", "\(consent)")
+    }
+
+    /// Use to manually set the consent status on the Pangle SDK.
+    /// This is generally unnecessary as the Mediation SDK will set the consent status automatically based on the latest consent info.
+    @objc public static func setDoNotSellOverride(_ doNotSell: PAGDoNotSellType) {
+        isDoNotSellOverriden = true
+        PAGConfig.share().doNotSell = doNotSell
+        os_log(.info, log: log, "Pangle SDK do not sell override set to %{public}s", "\(doNotSell)")
+    }
+
+    /// Internal flag that indicates if the GDPR consent has been overriden by the publisher.
+    static private(set) var isGDPRConsentOverriden = false
+
+    /// Internal flag that indicates if the DoNotSell consent has been overriden by the publisher.
+    static private(set) var isDoNotSellOverriden = false
+
+    private static let log = OSLog(subsystem: "com.chartboost.mediation.adapter.pangle", category: "Configuration")
 }
