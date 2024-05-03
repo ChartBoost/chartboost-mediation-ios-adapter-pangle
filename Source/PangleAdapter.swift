@@ -10,28 +10,9 @@ import UIKit
 
 /// The Chartboost Mediation Pangle adapter.
 final class PangleAdapter: PartnerAdapter {
-
-    /// The version of the partner SDK.
-    var partnerSDKVersion: String {
-        PangleAdapterConfiguration.partnerSDKVersion
-    }
-
-    /// The version of the adapter.
-    /// It should have either 5 or 6 digits separated by periods, where the first digit is Chartboost Mediation SDK's major version, the last digit is the adapter's build version, and intermediate digits are the partner SDK's version.
-    /// Format: `<Chartboost Mediation major version>.<Partner major version>.<Partner minor version>.<Partner patch version>.<Partner build version>.<Adapter build version>` where `.<Partner build version>` is optional.
-    var adapterVersion: String {
-        PangleAdapterConfiguration.adapterVersion
-    }
-
-    /// The partner's unique identifier.
-    var partnerID: String {
-        PangleAdapterConfiguration.partnerID
-    }
-
-    /// The human-friendly partner name.
-    var partnerDisplayName: String {
-        PangleAdapterConfiguration.partnerDisplayName
-    }
+    /// The adapter configuration type that contains adapter and partner info.
+    /// It may also be used to expose custom partner SDK options to the publisher.
+    var configuration: PartnerAdapterConfiguration.Type { PangleAdapterConfiguration.self }
 
     /// The designated initializer for the adapter.
     /// Chartboost Mediation SDK will use this constructor to create instances of conforming types.
@@ -59,8 +40,8 @@ final class PangleAdapter: PartnerAdapter {
         // Identify Chartboost Mediation as the mediation source.
         // https://bytedance.feishu.cn/docs/doccnizmSHXvAcbT1dIYEthNlCg
         let extData =
-            "[{\"name\":\"mediation\",\"value\":\"Chartboost\"},{\"name\":\"adapter_version\",\"value\":\"\(adapterVersion)\"}]"
-        
+            "[{\"name\":\"mediation\",\"value\":\"Chartboost\"},{\"name\":\"adapter_version\",\"value\":\"\(self.configuration.adapterVersion)\"}]"
+
         let config = PAGConfig.share()
         config.appID = appID
         config.userDataString = extData
@@ -93,9 +74,9 @@ final class PangleAdapter: PartnerAdapter {
         // See PAGConfig.gdprConsent documentation on PAGConfig.h
         // Ignore if the consent status has been directly set by publisher via the configuration class.
         if !PangleAdapterConfiguration.isGDPRConsentOverriden
-            && (modifiedKeys.contains(partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven))
+            && (modifiedKeys.contains(configuration.partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven))
         {
-            let consent = consents[partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
+            let consent = consents[configuration.partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
             switch consent {
             case ConsentValues.granted:
                 PAGConfig.share().gdprConsent = .consent
