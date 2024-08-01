@@ -8,77 +8,72 @@ import Foundation
 import PAGAdSDK
 
 /// The Chartboost Mediation Pangle adapter rewarded ad.
-final class PangleAdapterRewardedAd: PangleAdapterAd, PartnerAd {
-    
-    /// The partner ad view to display inline. E.g. a banner view.
-    /// Should be nil for full-screen ads.
-    var inlineView: UIView? { nil }
-    
+final class PangleAdapterRewardedAd: PangleAdapterAd, PartnerFullscreenAd {
     /// The Pangle SDK ad instance.
     private var ad: PAGRewardedAd?
-    
+
     /// Loads an ad.
     /// - parameter viewController: The view controller on which the ad will be presented on. Needed on load for some banners.
     /// - parameter completion: Closure to be performed once the ad has been loaded.
-    func load(with viewController: UIViewController?, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
+    func load(with viewController: UIViewController?, completion: @escaping (Error?) -> Void) {
         log(.loadStarted)
-        
+
         PAGRewardedAd.load(withSlotID: request.partnerPlacement, request: PAGRewardedRequest()) { [weak self] ad, partnerError in
-            guard let self = self else { return }
-            if let ad = ad, partnerError == nil {   // It's possible that an error occurs, the ad cannot be shown, and yet `ad` is not nil
+            guard let self else { return }
+            if let ad, partnerError == nil {   // It's possible that an error occurs, the ad cannot be shown, and yet `ad` is not nil
                 ad.delegate = self
                 self.ad = ad
                 self.log(.loadSucceeded)
-                completion(.success([:]))
+                completion(nil)
             } else {
                 let error = partnerError ?? self.error(.loadFailureUnknown)
                 self.log(.loadFailed(error))
-                completion(.failure(error))
+                completion(error)
             }
         }
     }
-    
+
     /// Shows a loaded ad.
-    /// It will never get called for banner ads. You may leave the implementation blank for that ad format.
+    /// Chartboost Mediation SDK will always call this method from the main thread.
     /// - parameter viewController: The view controller on which the ad will be presented on.
     /// - parameter completion: Closure to be performed once the ad has been shown.
-    func show(with viewController: UIViewController, completion: @escaping (Result<PartnerEventDetails, Error>) -> Void) {
+    func show(with viewController: UIViewController, completion: @escaping (Error?) -> Void) {
         log(.showStarted)
-        
+
         // Fail early if no ad is loaded
-        guard let ad = ad else {
+        guard let ad else {
             let error = error(.showFailureAdNotReady)
             log(.showFailed(error))
-            return completion(.failure(error))
+            completion(error)
+            return
         }
-        
+
         showCompletion = completion
-        
+
         ad.delegate = self
         ad.present(fromRootViewController: viewController)
     }
 }
 
 extension PangleAdapterRewardedAd: PAGRewardedAdDelegate {
-    
     func adDidShow(_ ad: PAGAdProtocol) {
         log(.showSucceeded)
-        showCompletion?(.success([:])) ?? log(.showResultIgnored)
+        showCompletion?(nil) ?? log(.showResultIgnored)
         showCompletion = nil
     }
-    
+
     func adDidClick(_ ad: PAGAdProtocol) {
         log(.didClick(error: nil))
-        delegate?.didClick(self, details: [:]) ?? log(.delegateUnavailable)
+        delegate?.didClick(self) ?? log(.delegateUnavailable)
     }
-    
+
     func adDidDismiss(_ ad: PAGAdProtocol) {
         log(.didDismiss(error: nil))
-        delegate?.didDismiss(self, details: [:], error: nil) ?? log(.delegateUnavailable)
+        delegate?.didDismiss(self, error: nil) ?? log(.delegateUnavailable)
     }
-    
+
     func rewardedAd(_ rewardedAd: PAGRewardedAd, userDidEarnReward rewardModel: PAGRewardModel) {
         log(.didReward)
-        delegate?.didReward(self, details: [:]) ?? log(.delegateUnavailable)
+        delegate?.didReward(self) ?? log(.delegateUnavailable)
     }
 }

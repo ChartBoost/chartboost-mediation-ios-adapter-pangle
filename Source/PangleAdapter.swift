@@ -10,133 +10,154 @@ import UIKit
 
 /// The Chartboost Mediation Pangle adapter.
 final class PangleAdapter: PartnerAdapter {
-    
-    /// The version of the partner SDK.
-    let partnerSDKVersion: String = PAGSdk.sdkVersion
-    
-    /// The version of the adapter.
-    /// It should have either 5 or 6 digits separated by periods, where the first digit is Chartboost Mediation SDK's major version, the last digit is the adapter's build version, and intermediate digits are the partner SDK's version.
-    /// Format: `<Chartboost Mediation major version>.<Partner major version>.<Partner minor version>.<Partner patch version>.<Partner build version>.<Adapter build version>` where `.<Partner build version>` is optional.
-    let adapterVersion = "4.6.1.0.0.0"
-    
-    /// The partner's unique identifier.
-    let partnerIdentifier = "pangle"
-    
-    /// The human-friendly partner name.
-    let partnerDisplayName = "Pangle"
-    
+    /// The adapter configuration type that contains adapter and partner info.
+    /// It may also be used to expose custom partner SDK options to the publisher.
+    var configuration: PartnerAdapterConfiguration.Type { PangleAdapterConfiguration.self }
+
     /// The designated initializer for the adapter.
     /// Chartboost Mediation SDK will use this constructor to create instances of conforming types.
     /// - parameter storage: An object that exposes storage managed by the Chartboost Mediation SDK to the adapter.
     /// It includes a list of created `PartnerAd` instances. You may ignore this parameter if you don't need it.
     init(storage: PartnerAdapterStorage) {}
-    
+
     /// Does any setup needed before beginning to load ads.
     /// - parameter configuration: Configuration data for the adapter to set up.
-    /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating the cause for failure or `nil` if the operation finished successfully.
-    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Error?) -> Void) {
+    /// - parameter completion: Closure to be performed by the adapter when it's done setting up. It should include an error indicating
+    /// the cause for failure or `nil` if the operation finished successfully.
+    func setUp(with configuration: PartnerConfiguration, completion: @escaping (Result<PartnerDetails, Error>) -> Void) {
         log(.setUpStarted)
-        
+
         // Fail early if credentials are missing.
         guard let appID = configuration.appID, !appID.isEmpty else {
             let error = error(.initializationFailureInvalidCredentials, description: "Missing \(String.appIDKey)")
             log(.setUpFailed(error))
-            return completion(error)
+            completion(.failure(error))
+            return
         }
-        
+
+        // Apply initial consents
+        setConsents(configuration.consents, modifiedKeys: Set(configuration.consents.keys))
+        setIsUserUnderage(configuration.isUserUnderage)
+
         // Identify Chartboost Mediation as the mediation source.
         // https://bytedance.feishu.cn/docs/doccnizmSHXvAcbT1dIYEthNlCg
         let extData =
-            "[{\"name\":\"mediation\",\"value\":\"Chartboost\"},{\"name\":\"adapter_version\",\"value\":\"\(adapterVersion)\"}]"
-        
+            "[{\"name\":\"mediation\",\"value\":\"Chartboost\"},{\"name\":\"adapter_version\",\"value\":\"\(self.configuration.adapterVersion)\"}]"
+
         let config = PAGConfig.share()
         config.appID = appID
         config.userDataString = extData
-        
+
         PAGSdk.start(with: config) { [self] success, error in
             if success {
                 log(.setUpSucceded)
-                completion(nil)
+                completion(.success([:]))
             } else {
                 let error = error ?? self.error(.partnerError)
                 log(.setUpFailed(error))
-                completion(error)
+                completion(.failure(error))
             }
         }
     }
-    
+
     /// Fetches bidding tokens needed for the partner to participate in an auction.
     /// - parameter request: Information about the ad load request.
     /// - parameter completion: Closure to be performed with the fetched info.
-    func fetchBidderInformation(request: PreBidRequest, completion: @escaping ([String : String]?) -> Void) {
+    func fetchBidderInformation(request: PartnerAdPreBidRequest, completion: @escaping (Result<[String: String], Error>) -> Void) {
         // Pangle does not currently provide any bidding token
-        completion(nil)
+        log(.fetchBidderInfoNotSupported)
+        completion(.success([:]))
     }
-    
-    /// Indicates if GDPR applies or not and the user's GDPR consent status.
-    /// - parameter applies: `true` if GDPR applies, `false` if not, `nil` if the publisher has not provided this information.
-    /// - parameter status: One of the `GDPRConsentStatus` values depending on the user's preference.
-    func setGDPR(applies: Bool?, status: GDPRConsentStatus) {
+
+    /// Indicates that the user consent has changed.
+    /// - parameter consents: The new consents value, including both modified and unmodified consents.
+    /// - parameter modifiedKeys: A set containing all the keys that changed.
+    func setConsents(_ consents: [ConsentKey: ConsentValue], modifiedKeys: Set<ConsentKey>) {
         // See PAGConfig.gdprConsent documentation on PAGConfig.h
-        if applies == true {
-            let gpdrConsent: PAGGDPRConsentType = status == .granted ? .consent : .noConsent
-            PAGConfig.share().gdprConsent = gpdrConsent
-            log(.privacyUpdated(setting: "gdprConsent", value: gpdrConsent.rawValue))
+        // Ignore if the consent status has been directly set by publisher via the configuration class.
+        if !PangleAdapterConfiguration.isGDPRConsentOverridden
+            && (modifiedKeys.contains(configuration.partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven))
+        {
+            let consent = consents[configuration.partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
+            switch consent {
+            case ConsentValues.granted:
+                PAGConfig.share().gdprConsent = .consent
+                log(.privacyUpdated(setting: "gdprConsent", value: PAGGDPRConsentType.consent.rawValue))
+            case ConsentValues.denied:
+                PAGConfig.share().gdprConsent = .noConsent
+                log(.privacyUpdated(setting: "gdprConsent", value: PAGGDPRConsentType.noConsent.rawValue))
+            default:
+                break   // do nothing
+            }
+        }
+
+        // See PAGConfig.doNotSell documentation on PAGConfig.h
+        // Ignore if the consent status has been directly set by publisher via the configuration class.
+        if !PangleAdapterConfiguration.isDoNotSellOverridden && modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
+            let consent = consents[ConsentKeys.ccpaOptIn]
+            switch consent {
+            case ConsentValues.granted:
+                PAGConfig.share().doNotSell = .sell
+                log(.privacyUpdated(setting: "doNotSell", value: PAGDoNotSellType.sell.rawValue))
+            case ConsentValues.denied:
+                PAGConfig.share().doNotSell = .notSell
+                log(.privacyUpdated(setting: "doNotSell", value: PAGDoNotSellType.notSell.rawValue))
+            default:
+                break   // do nothing
+            }
         }
     }
-    
-    /// Indicates if the user is subject to COPPA or not.
-    /// - parameter isChildDirected: `true` if the user is subject to COPPA, `false` otherwise.
-    func setCOPPA(isChildDirected: Bool) {
+
+    /// Indicates that the user is underage signal has changed.
+    /// - parameter isUserUnderage: `true` if the user is underage as determined by the publisher, `false` otherwise.
+    func setIsUserUnderage(_ isUserUnderage: Bool) {
         // See PAGConfig.childDirected documentation on PAGConfig.h
-        let childDirected: PAGChildDirectedType = isChildDirected ? .child : .nonChild
+        let childDirected: PAGChildDirectedType = isUserUnderage ? .child : .nonChild
         PAGConfig.share().childDirected = childDirected
         log(.privacyUpdated(setting: "childDirected", value: childDirected.rawValue))
     }
-    
-    /// Indicates the CCPA status both as a boolean and as an IAB US privacy string.
-    /// - parameter hasGivenConsent: A boolean indicating if the user has given consent.
-    /// - parameter privacyString: An IAB-compliant string indicating the CCPA status.
-    func setCCPA(hasGivenConsent: Bool, privacyString: String) {
-        // See PAGConfig.doNotSell documentation on PAGConfig.h
-        let doNotSell: PAGDoNotSellType = hasGivenConsent ? .sell : .notSell
-        PAGConfig.share().doNotSell = doNotSell
-        log(.privacyUpdated(setting: "doNotSell", value: doNotSell.rawValue))
+
+    /// Creates a new banner ad object in charge of communicating with a single partner SDK ad instance.
+    /// Chartboost Mediation SDK calls this method to create a new ad for each new load request. Ad instances are never reused.
+    /// Chartboost Mediation SDK takes care of storing and disposing of ad instances so you don't need to.
+    /// ``PartnerAd/invalidate()`` is called on ads before disposing of them in case partners need to perform any custom logic before the
+    /// object gets destroyed.
+    /// If, for some reason, a new ad cannot be provided, an error should be thrown.
+    /// Chartboost Mediation SDK will always call this method from the main thread.
+    /// - parameter request: Information about the ad load request.
+    /// - parameter delegate: The delegate that will receive ad life-cycle notifications.
+    func makeBannerAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerBannerAd {
+        // This partner supports multiple loads for the same partner placement.
+        PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
     }
-    
+
     /// Creates a new ad object in charge of communicating with a single partner SDK ad instance.
     /// Chartboost Mediation SDK calls this method to create a new ad for each new load request. Ad instances are never reused.
     /// Chartboost Mediation SDK takes care of storing and disposing of ad instances so you don't need to.
-    /// `invalidate()` is called on ads before disposing of them in case partners need to perform any custom logic before the object gets destroyed.
+    /// ``PartnerAd/invalidate()`` is called on ads before disposing of them in case partners need to perform any custom logic before the
+    /// object gets destroyed.
     /// If, for some reason, a new ad cannot be provided, an error should be thrown.
     /// - parameter request: Information about the ad load request.
     /// - parameter delegate: The delegate that will receive ad life-cycle notifications.
-    func makeAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerAd {
+    func makeFullscreenAd(request: PartnerAdLoadRequest, delegate: PartnerAdDelegate) throws -> PartnerFullscreenAd {
         // This partner supports multiple loads for the same partner placement.
         switch request.format {
-        case .interstitial:
+        case PartnerAdFormats.interstitial:
             return PangleAdapterInterstitialAd(adapter: self, request: request, delegate: delegate)
-        case .rewarded:
+        case PartnerAdFormats.rewarded:
             return PangleAdapterRewardedAd(adapter: self, request: request, delegate: delegate)
-        case .banner:
-            return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
         default:
-            // Not using the `.adaptiveBanner` case directly to maintain backward compatibility with Chartboost Mediation 4.0
-            if request.format.rawValue == "adaptive_banner" {
-                return PangleAdapterBannerAd(adapter: self, request: request, delegate: delegate)
-            } else {
-                throw error(.loadFailureUnsupportedAdFormat)
-            }
+            throw error(.loadFailureUnsupportedAdFormat)
         }
     }
 }
 
 /// Convenience extension to access Pangle credentials from the configuration.
-private extension PartnerConfiguration {
-    var appID: String? { credentials[.appIDKey] as? String }
+extension PartnerConfiguration {
+    fileprivate var appID: String? { credentials[.appIDKey] as? String }
 }
 
-private extension String {
+extension String {
     /// Pangle app ID credentials key
-    static let appIDKey = "application_id"
+    fileprivate static let appIDKey = "application_id"
 }
