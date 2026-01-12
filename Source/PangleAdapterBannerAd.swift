@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Chartboost, Inc.
+// Copyright 2022-2026 Chartboost, Inc.
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
@@ -25,16 +25,17 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerBannerAd {
         log(.loadStarted)
 
         // Fail if we cannot fit a fixed size banner in the requested size.
-        guard let requestedSize = request.bannerSize,
-              let loadedSize = BannerSize.largestStandardFixedSizeThatFits(in: requestedSize)?.size else {
+        guard
+            let requestedSize = request.bannerSize,
+            let pagAdSize = requestedSize.pagAdSize
+        else {
             let error = error(.loadFailureInvalidBannerSize)
             log(.loadFailed(error))
             completion(error)
             return
         }
 
-        let pangleSize = PAGAdSize(size: loadedSize)
-        let bannerRequest = PAGBannerRequest(bannerSize: pangleSize)
+        let bannerRequest = PAGBannerRequest(bannerSize: pagAdSize)
 
         PAGBannerAd.load(withSlotID: request.partnerPlacement, request: bannerRequest) { [weak self] ad, partnerError in
             guard let self else { return }
@@ -43,7 +44,7 @@ final class PangleAdapterBannerAd: PangleAdapterAd, PartnerBannerAd {
                 ad.rootViewController = viewController
                 self.ad = ad
                 self.log(.loadSucceeded)
-                self.size = PartnerBannerSize(size: loadedSize, type: .fixed)
+                self.size = PartnerBannerSize(size: ad.adSize.size, type: requestedSize.type)
                 completion(nil)
             } else {
                 let error = partnerError ?? self.error(.loadFailureUnknown)
@@ -66,5 +67,23 @@ extension PangleAdapterBannerAd: PAGBannerAdDelegate {
 
     func adDidDismiss(_ ad: PAGAdProtocol) {
         log(.delegateCallIgnored)
+    }
+}
+
+extension BannerSize {
+    fileprivate var pagAdSize: PAGBannerAdSize? {
+        if self.type == .adaptive {
+            return PAGInlineAdaptiveBannerAdSizeWithWidthAndMaxHeight(self.size.width, self.size.height)
+        }
+        switch self {
+        case .standard:
+            return kPAGBannerSize320x50
+        case .medium:
+            return kPAGBannerSize300x250
+        case .leaderboard:
+            return kPAGBannerSize728x90
+        default:
+            return nil
+        }
     }
 }

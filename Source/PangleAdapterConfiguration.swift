@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Chartboost, Inc.
+// Copyright 2022-2026 Chartboost, Inc.
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
@@ -18,7 +18,7 @@ import PAGAdSDK
     /// last digit is the adapter's build version, and intermediate digits are the partner SDK's version.
     /// Format: `<Chartboost Mediation major version>.<Partner major version>.<Partner minor version>.<Partner patch version>.
     /// <Partner build version>.<Adapter build version>` where `.<Partner build version>` is optional.
-    @objc public static let adapterVersion = "5.6.3.1.0.0"
+    @objc public static let adapterVersion = "5.7.1.1.0.0"
 
     /// The partner's unique identifier.
     @objc public static let partnerID = "pangle"
@@ -36,15 +36,15 @@ import PAGAdSDK
 
     /// Use to manually set the consent status on the Pangle SDK.
     /// This is generally unnecessary as the Mediation SDK will set the consent status automatically based on the latest consent info.
-    @objc public static func setDoNotSellOverride(_ doNotSell: PAGDoNotSellType) {
-        isDoNotSellOverridden = true
-        PAGConfig.share().doNotSell = doNotSell
-        log("Do not sell override set to \(doNotSell)")
+    @objc public static func setPAConsentTypeOverride(_ consentType: PAGPAConsentType) {
+        isPAConsentOverridden = true
+        PAGConfig.share().paConsent = consentType
+        log("PA consent override set to \(consentType)")
     }
 
     /// Internal flag that indicates if the GDPR consent has been overridden by the publisher.
     private(set) static var isGDPRConsentOverridden = false
 
-    /// Internal flag that indicates if the DoNotSell consent has been overridden by the publisher.
-    private(set) static var isDoNotSellOverridden = false
+    /// Internal flag that indicates if the PA consent has been overridden by the publisher.
+    private(set) static var isPAConsentOverridden = false
 }

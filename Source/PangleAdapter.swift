@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Chartboost, Inc.
+// Copyright 2022-2026 Chartboost, Inc.
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file.
@@ -37,7 +37,6 @@ final class PangleAdapter: PartnerAdapter {
 
         // Apply initial consents
         setConsents(configuration.consents, modifiedKeys: Set(configuration.consents.keys))
-        setIsUserUnderage(configuration.isUserUnderage)
 
         // Identify Chartboost Mediation as the mediation source.
         // https://bytedance.feishu.cn/docs/doccnizmSHXvAcbT1dIYEthNlCg
@@ -76,8 +75,7 @@ final class PangleAdapter: PartnerAdapter {
         // See PAGConfig.gdprConsent documentation on PAGConfig.h
         // Ignore if the consent status has been directly set by publisher via the configuration class.
         if !PangleAdapterConfiguration.isGDPRConsentOverridden
-            && (modifiedKeys.contains(configuration.partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven))
-        {
+            && (modifiedKeys.contains(configuration.partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven)) {
             let consent = consents[configuration.partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
             switch consent {
             case ConsentValues.granted:
@@ -93,15 +91,15 @@ final class PangleAdapter: PartnerAdapter {
 
         // See PAGConfig.doNotSell documentation on PAGConfig.h
         // Ignore if the consent status has been directly set by publisher via the configuration class.
-        if !PangleAdapterConfiguration.isDoNotSellOverridden && modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
+        if !PangleAdapterConfiguration.isPAConsentOverridden && modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
             let consent = consents[ConsentKeys.ccpaOptIn]
             switch consent {
             case ConsentValues.granted:
-                PAGConfig.share().doNotSell = .sell
-                log(.privacyUpdated(setting: "doNotSell", value: PAGDoNotSellType.sell.rawValue))
+                PAGConfig.share().paConsent = .consent
+                log(.privacyUpdated(setting: "paConsent", value: PAGPAConsentType.consent.rawValue))
             case ConsentValues.denied:
-                PAGConfig.share().doNotSell = .notSell
-                log(.privacyUpdated(setting: "doNotSell", value: PAGDoNotSellType.notSell.rawValue))
+                PAGConfig.share().paConsent = .noConsent
+                log(.privacyUpdated(setting: "paConsent", value: PAGPAConsentType.noConsent.rawValue))
             default:
                 break   // do nothing
             }
@@ -111,10 +109,7 @@ final class PangleAdapter: PartnerAdapter {
     /// Indicates that the user is underage signal has changed.
     /// - parameter isUserUnderage: `true` if the user is underage as determined by the publisher, `false` otherwise.
     func setIsUserUnderage(_ isUserUnderage: Bool) {
-        // See PAGConfig.childDirected documentation on PAGConfig.h
-        let childDirected: PAGChildDirectedType = isUserUnderage ? .child : .nonChild
-        PAGConfig.share().childDirected = childDirected
-        log(.privacyUpdated(setting: "childDirected", value: childDirected.rawValue))
+        // As of Pangle 7.1.0.7, this method no longer has any effect.
     }
 
     /// Creates a new banner ad object in charge of communicating with a single partner SDK ad instance.
