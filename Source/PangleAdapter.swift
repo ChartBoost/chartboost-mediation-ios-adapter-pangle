@@ -72,24 +72,10 @@ final class PangleAdapter: PartnerAdapter {
     /// - parameter consents: The new consents value, including both modified and unmodified consents.
     /// - parameter modifiedKeys: A set containing all the keys that changed.
     func setConsents(_ consents: [ConsentKey: ConsentValue], modifiedKeys: Set<ConsentKey>) {
-        // See PAGConfig.gdprConsent documentation on PAGConfig.h
-        // Ignore if the consent status has been directly set by publisher via the configuration class.
-        if !PangleAdapterConfiguration.isGDPRConsentOverridden
-            && (modifiedKeys.contains(configuration.partnerID) || modifiedKeys.contains(ConsentKeys.gdprConsentGiven)) {
-            let consent = consents[configuration.partnerID] ?? consents[ConsentKeys.gdprConsentGiven]
-            switch consent {
-            case ConsentValues.granted:
-                PAGConfig.share().gdprConsent = .consent
-                log(.privacyUpdated(setting: "gdprConsent", value: PAGGDPRConsentType.consent.rawValue))
-            case ConsentValues.denied:
-                PAGConfig.share().gdprConsent = .noConsent
-                log(.privacyUpdated(setting: "gdprConsent", value: PAGGDPRConsentType.noConsent.rawValue))
-            default:
-                break   // do nothing
-            }
-        }
+        // Note: As of Pangle SDK 7.9.0, GDPR consent is handled automatically via TCFv2 strings
+        // stored in NSUserDefaults. The explicit gdprConsent API has been removed.
 
-        // See PAGConfig.doNotSell documentation on PAGConfig.h
+        // See PAGConfig.PAConsent documentation on PAGConfig.h
         // Ignore if the consent status has been directly set by publisher via the configuration class.
         if !PangleAdapterConfiguration.isPAConsentOverridden && modifiedKeys.contains(ConsentKeys.ccpaOptIn) {
             let consent = consents[ConsentKeys.ccpaOptIn]
